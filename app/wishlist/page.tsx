@@ -1,0 +1,4 @@
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+export default function WishlistPage() { const [items, setItems] = useState<any[]>([]); const [error, setError] = useState(""); useEffect(() => { fetch("/api/wishlist").then((r) => r.json()).then((body) => body.success ? setItems(body.data.items) : setError(body.error?.message ?? "Unable to load wishlist")); }, []); return <main className="mx-auto max-w-5xl px-5 py-12"><h1 className="text-3xl font-semibold">Wishlist</h1>{error ? <p className="mt-6">{error} <Link className="text-accent" href="/login">Sign in</Link></p> : <div className="mt-6 grid gap-4 sm:grid-cols-2">{items.map(({ id, product }) => <Link key={id} href={`/products/${product.slug}`} className="rounded-lg border bg-white p-4"><p className="font-semibold">{product.name}</p><p>${Number(product.price).toFixed(2)}</p></Link>)}{!items.length && <p className="text-slate-600">No saved products yet.</p>}</div>}</main>; }

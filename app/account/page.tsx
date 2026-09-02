@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { currentUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+export default async function AccountPage() { const user = await currentUser(); if (!user) return <main className="mx-auto max-w-3xl px-5 py-16"><h1 className="text-3xl font-semibold">Your account</h1><p className="mt-3 text-slate-600">Sign in to view orders, addresses, and saved products.</p><Link className="mt-6 inline-block rounded bg-ink px-5 py-3 font-semibold text-white" href="/login">Sign in</Link></main>; return <main className="mx-auto max-w-3xl px-5 py-16"><p className="text-sm font-semibold text-accent">ACCOUNT</p><h1 className="mt-1 text-3xl font-semibold">Hello, {user.firstName}</h1><p className="mt-3 text-slate-600">{user.email}</p><div className="mt-8 grid gap-3 sm:grid-cols-2"><Link href="/account/orders" className="rounded-lg border bg-white p-5 font-semibold">Order history</Link><Link href="/wishlist" className="rounded-lg border bg-white p-5 font-semibold">Wishlist</Link></div></main>; }
