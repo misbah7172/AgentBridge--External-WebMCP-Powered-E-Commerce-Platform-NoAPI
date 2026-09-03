@@ -1,17 +1,13 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { applyCouponAction, clearCartAction, removeCartItemAction } from "@/app/actions";
+import { currentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
 
-type Cart = { items: { id: string; quantity: number; product: { name: string; slug: string }; lineTotal: number }[]; subtotal: number };
-
-export function CartView() {
-  const [cart, setCart] = useState<Cart | null>(null); const [error, setError] = useState("");
-  async function load() { const response = await fetch("/api/cart"); const body = await response.json(); if (!body.success) return setError(body.error?.message ?? "Unable to load cart"); setCart(body.data); }
-  useEffect(() => { void load(); }, []);
-  async function remove(id: string) { await fetch(`/api/cart/items/${id}`, { method: "DELETE" }); await load(); }
-  if (error) return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">{error} <Link href="/login" className="font-semibold underline">Sign in</Link></div>;
-  if (!cart) return <p>Loading cart…</p>;
-  if (!cart.items.length) return <div className="rounded-lg border bg-white p-8"><h1 className="text-2xl font-semibold">Your cart is empty</h1><Link href="/products" className="mt-4 inline-block font-semibold text-accent">Browse products</Link></div>;
-  return <div className="grid gap-8 md:grid-cols-[1fr_18rem]"><div className="space-y-3">{cart.items.map((item) => <div key={item.id} className="flex items-center justify-between rounded-lg border bg-white p-4"><div><Link className="font-semibold" href={`/products/${item.product.slug}`}>{item.product.name}</Link><p className="text-sm text-slate-500">Quantity: {item.quantity}</p></div><div className="text-right"><p className="font-semibold">${item.lineTotal.toFixed(2)}</p><button onClick={() => remove(item.id)} className="mt-2 text-sm text-red-600">Remove</button></div></div>)}</div><aside className="h-fit rounded-lg border bg-white p-5"><h2 className="text-lg font-semibold">Order summary</h2><div className="mt-4 flex justify-between"><span>Subtotal</span><strong>${cart.subtotal.toFixed(2)}</strong></div><Link href="/checkout" className="mt-5 block rounded bg-ink py-3 text-center font-semibold text-white">Checkout</Link></aside></div>;
+export async function CartView() {
+  const user = await currentUser();
+  if (!user) return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">Please <Link href="/login" className="font-semibold underline">sign in</Link> to view your cart.</div>;
+  const cart = await db.cart.findUnique({ where: { userId: user.id }, include: { items: { include: { product: true, variant: true } } } });
+  if (!cart?.items.length) return <div className="rounded-lg border bg-white p-8"><h1 className="text-2xl font-semibold">Your cart is empty</h1><Link href="/products" className="mt-4 inline-block font-semibold text-accent">Browse products</Link></div>;
+  const subtotal = cart.items.reduce((sum, item) => sum + Number(item.variant?.price ?? item.product.price) * item.quantity, 0);
+  return <div className="grid gap-8 md:grid-cols-[1fr_18rem]" data-agentbridge-cart="active"><div className="space-y-3">{cart.items.map((item) => <div key={item.id} data-agentbridge-cart-item={item.id} className="flex items-center justify-between rounded-lg border bg-white p-4"><div><Link className="font-semibold" href={`/products/${item.product.slug}`}>{item.product.name}</Link><p className="text-sm text-slate-500">Quantity: {item.quantity}</p></div><div className="text-right"><p className="font-semibold">${(Number(item.variant?.price ?? item.product.price) * item.quantity).toFixed(2)}</p><form action={removeCartItemAction}><input type="hidden" name="itemId" value={item.id} /><button data-agentbridge-action="remove-cart-item" className="mt-2 text-sm text-red-600">Remove</button></form></div></div>)}</div><aside className="h-fit rounded-lg border bg-white p-5"><h2 className="text-lg font-semibold">Order summary</h2><div className="mt-4 flex justify-between"><span>Subtotal</span><strong>${subtotal.toFixed(2)}</strong></div><form action={applyCouponAction} className="mt-4 flex gap-2"><input name="code" data-agentbridge-field="coupon" placeholder="Coupon code" className="min-w-0 rounded border p-2 text-sm" /><button data-agentbridge-action="apply-coupon" className="rounded border px-3 text-sm">Apply</button></form><form action={clearCartAction}><button data-agentbridge-action="clear-cart" className="mt-4 text-sm text-red-600">Clear cart</button></form><Link data-agentbridge-action="checkout-link" href="/checkout" className="mt-5 block rounded bg-ink py-3 text-center font-semibold text-white">Checkout</Link></aside></div>;
 }
