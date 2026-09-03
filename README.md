@@ -100,6 +100,17 @@ No benchmark suite has been executed. `npm run build` completes successfully; an
 
 Run locally, register an account or use the seeded account, then browse products and complete a mock checkout. The companion adapter demo is described [here](https://github.com/misbah7172/AgentBridge--External-WebMCP-NoAPI-Adapter#23-demo).
 
+### Demo Login Credentials
+
+The committed [seed script](https://github.com/misbah7172/AgentBridge--External-WebMCP-Powered-E-Commerce-Platform-NoAPI/blob/main/prisma/seed.ts) creates the following demonstration account:
+
+```text
+Email:    demo@agentbridge.local
+Password: DemoPass123!
+```
+
+These credentials are for development and demonstration only. Remove or rotate them before production use.
+
 ## 24. Screenshots / Demo GIF / Video
 
 Visual assets have not yet been published. This section will link to recorded browser and adapter demonstrations when available.
