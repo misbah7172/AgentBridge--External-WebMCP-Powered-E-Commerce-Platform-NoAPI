@@ -17,7 +17,13 @@ export async function createSession(userId: string) {
 export async function clearSession() {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
-  if (token) await db.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+  if (token) {
+    try {
+      await db.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+    } catch {
+      // DB might be unreachable – still clear the cookie so the user is logged out client-side.
+    }
+  }
   jar.set(cookieName, "", { httpOnly: true, sameSite: "lax", expires: new Date(0), path: "/" });
 }
 
@@ -26,7 +32,7 @@ export async function currentUser() {
   if (!token) return null;
   const session = await db.session.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
   if (!session || session.expiresAt <= new Date()) {
-    if (session) await db.session.delete({ where: { id: session.id } });
+    if (session) await db.session.deleteMany({ where: { id: session.id } });
     return null;
   }
   return session.user;

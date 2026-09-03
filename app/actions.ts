@@ -19,7 +19,16 @@ export async function registerAction(form: FormData) {
   if (await db.user.findUnique({ where: { email } })) redirect("/register?error=email_taken");
   const user = await db.user.create({ data: { email, firstName, lastName, passwordHash: await hashPassword(password) } }); await createSession(user.id); redirect("/account");
 }
-export async function signOutAction() { await clearSession(); redirect("/"); }
+export async function signOutAction() {
+  try {
+    await clearSession();
+  } catch (e: unknown) {
+    // Next.js redirect()/notFound() throws a special error with a `digest` property – re-throw it.
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    // If session cleanup fails (e.g. DB error), still redirect to home.
+  }
+  redirect("/");
+}
 export async function addToCartAction(form: FormData) {
   const user = await requireUser(); const productId = text(form, "productId"); const variantId = text(form, "variantId") || null; const quantity = Math.max(1, Math.min(20, Number(form.get("quantity") ?? 1))); const product = await db.product.findUnique({ where: { id: productId } }); if (!product) redirect("/products"); const variant = variantId ? await db.productVariant.findFirst({ where: { id: variantId, productId } }) : null;
   if ((variant?.stock ?? product.stock) < quantity) redirect(`/products/${product.slug}?error=out_of_stock`);
