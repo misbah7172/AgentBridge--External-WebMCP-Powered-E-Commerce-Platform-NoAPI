@@ -13,6 +13,23 @@ export async function loginAction(form: FormData) {
   if (!user || !(await verifyPassword(password, user.passwordHash))) redirect("/login?error=invalid_credentials");
   await createSession(user.id); redirect("/account");
 }
+
+export async function demoLoginAction(_form?: FormData) {
+  const email = "demo@agentbridge.local";
+  let user = await db.user.findUnique({ where: { email } });
+  if (!user) {
+    user = await db.user.create({
+      data: {
+        email,
+        firstName: "Demo",
+        lastName: "User",
+        passwordHash: await hashPassword("DemoPass123!"),
+      },
+    });
+  }
+  await createSession(user.id);
+  redirect("/account");
+}
 export async function registerAction(form: FormData) {
   const email = text(form, "email").toLowerCase(); const password = text(form, "password"); const firstName = text(form, "firstName"); const lastName = text(form, "lastName");
   if (!email || password.length < 8 || !firstName || !lastName) redirect("/register?error=invalid_input");
